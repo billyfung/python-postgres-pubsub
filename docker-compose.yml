@@ -1,0 +1,31 @@
+version: "3.7"
+services:
+
+  db:
+    container_name: pg10
+    image: postgres:10
+    environment:
+      - POSTGRES_USER=test
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=testdb
+    volumes:
+      - ./db_setup.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+
+  worker:
+    container_name: worker
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["./wait_for.sh", "db:5432", "--", "python", "-u", "worker.py"]
+    environment:
+      - DB_USER=test
+      - DB_PASS=pass
+      - DB_NAME=testdb
+      - DB_HOST=db
+    volumes:
+      - .:/app
+    depends_on:
+      - db
